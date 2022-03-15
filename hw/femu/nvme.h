@@ -23,8 +23,14 @@
  * Code Tracing for all functions under dir '/femu'
  * 
  */
-#define INHOINNO_VERBOSE_SETTING    1
+//#define INHOINNO_VERBOSE_SETTING    1
 
+/**
+ * @brief 
+ * Code Tracing for all functions under dir '/femu/nvme*'
+ * 
+ */
+#define INHOINNO_NVME_VERBOSE_SETTING    0
 
 
 #define NVME_ID_NS_LBADS(ns)                                                  \
@@ -864,7 +870,7 @@ typedef struct NvmeLBAF {
 #define NVME_NSID_BROADCAST 0xffffffff
 
 typedef struct NvmeIdNs {
-    uint64_t    nsze;
+    uint64_t    nsze;   //namespace size
     uint64_t    ncap;
     uint64_t    nuse;
     uint8_t     nsfeat;
@@ -972,9 +978,9 @@ typedef struct NvmeRequest {
     struct NvmeCQueue       *cq;
     struct NvmeNamespace    *ns;
     uint16_t                status;
-    uint64_t                slba;
-    uint16_t                is_write;
-    uint16_t                nlb;
+    uint64_t                slba;       //어디부터 시작할지
+    uint16_t                is_write;   //write 인지...
+    uint16_t                nlb;        //number of logical blocks
     uint16_t                ctrl;
     uint64_t                meta_size;
     uint64_t                mptr;
@@ -1194,6 +1200,8 @@ typedef struct FemuCtrl {
     uint32_t        max_open_zones;
     uint32_t        zd_extension_size;
 
+    struct zns      *zns;
+
     const uint32_t  *iocs;
     uint8_t         csi;
     NvmeIdNsZoned   *id_ns_zoned;
@@ -1234,7 +1242,7 @@ typedef struct FemuCtrl {
     uint8_t     elpe;
     uint8_t     elp_index;
     uint8_t     error_count;
-    uint8_t     mdts;
+    uint8_t     mdts;   //Maximum data transfer size
     uint8_t     cqr;
     uint8_t     max_sqes;
     uint8_t     max_cqes;
@@ -1500,7 +1508,6 @@ static inline uint16_t nvme_check_mdts(FemuCtrl *n, size_t len)
 
 #define femu_log(fmt, ...) \
     do { printf("[FEMU] Log: " fmt, ## __VA_ARGS__); } while (0)
-
 
 #endif /* __FEMU_NVME_H */
 
