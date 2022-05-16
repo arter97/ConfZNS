@@ -3,17 +3,16 @@
 
 #include "../nvme.h"
 
-#define ZONE_RESET_WHEN_ZONE_STATE_IS_FULL 0
 enum {
     NAND_READ =  0,
     NAND_WRITE = 1,
     NAND_ERASE = 2,
 
- /* In nand.h, SLC NAND latency numbers in nanoseconds*/
+ /* FIXME: Just simply add SLC NAND latency numbers in nanoseconds in nand.h for now,(Inhoinno) */
     NAND_READ_LATENCY  =   40000,
     NAND_PROG_LATENCY  =  500000,
     NAND_ERASE_LATENCY = 2000000,
-/* In zns : ZONE RESET time */
+/* As best I know, ZONE RESET time is way more faster than ERASE_LAT (Inhoinno) */
     ZONE_RESET_LATENCY =  200000,
 };
 
@@ -22,16 +21,12 @@ enum {
  * @brief 
  * inhoinno: to implement controller-level zone mapping in zns ssd, 
  * struct ssd_channel is neccesary
- * extends 'struct ssd_channel' in ../bbssd/ftl.h:102
- * 
+ * so simply extends 'struct ssd_channel' in ../bbssd/ftl.h:102
  */
 typedef struct zns_ssd_channel {
-    //struct NvmeZone *zone;
-    //int nluns;
     int nzones;
-    uint64_t next_ch_avail_time; //(usec)
+    uint64_t next_ch_avail_time; 
     bool busy;
-    //uint64_t gc_endtime;
 }zns_ssd_channel;
 
 /**
@@ -41,17 +36,15 @@ typedef struct zns_ssd_channel {
  * but differnce is ZNS does not do ftl jobs such as badblock management, GC 
  * so this structure only contains minimum fields
  */
-typedef struct zns_ssd_chip {
+typedef struct zns_ssd_lun {
     uint64_t next_avail_time; // in nanoseconds
     bool busy;
-    //uint64_t gc_endtime;
-}zns_ssd_chip;
+}zns_ssd_lun;
 
 /**
  * @brief 
  * inhoinno: to emulate latency in zns ssd, struct znsssd is needed
  * extends 'struct ssdparams' in ../bbssd/ftl.h:110
- *  
  */
 struct zns_ssdparams{
     uint16_t register_model;    /* =1 single register =2 double register */
@@ -78,12 +71,7 @@ typedef struct zns {
     char                *ssdname;
     struct zns_ssdparams    sp;
     struct zns_ssd_channel *ch;
-    struct zns_ssd_chip *chips;
-
-    /* lockless ring for communication with NVMe IO thread */
-    struct rte_ring     **to_zone;
-    struct rte_ring     **to_poller;
-    bool                *dataplane_started_ptr;
+    struct zns_ssd_lun *chips;
 
     /*new members for znsssd*/
     struct NvmeNamespace    * namespaces;      //FEMU only support 1 namespace For now, 
@@ -195,13 +183,6 @@ typedef struct NvmeZone {
     uint64_t        w_ptr;
     QTAILQ_ENTRY(NvmeZone) entry;
 } NvmeZone;
-
-typedef struct NvmeZnsZone {
-    NvmeZone        *zone;
-    zns_ssd_channel *chnl;
-    //bool            chnl_busy;
-    uint32_t        nchnls;
-} NvmeZnsZone;
 
 typedef struct NvmeNamespaceParams {
     uint32_t nsid;
@@ -334,9 +315,4 @@ void zns_ns_cleanup(NvmeNamespace *ns);
 void znsssd_init(FemuCtrl * n);
 static int zns_advance_status(FemuCtrl *n, NvmeNamespace *ns, NvmeCmd *cmd, NvmeRequest *req);
 
-#ifdef FEMU_DEBUG_FTL
-#define ftl_assert(expression) assert(expression)
-#else
-#define ftl_assert(expression)
-#endif
 #endif
