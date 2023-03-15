@@ -9,12 +9,10 @@ enum {
     NAND_ERASE = 2,
 
  /* FIXME: */
-    //NAND_READ_LATENCY  = 65000/6,  //65us /4plane TLC_tREAD(65us : 16K page time)   =16.25
-    NAND_READ_LATENCY  = 65000/6,
-    NAND_PROG_LATENCY  = 900000/12,//450us TLC_tProg(450us: 16K page(/4),3D(/3) time)  =37.5
-    //NAND_PROG_LATENCY  = 0,
+    NAND_READ_LATENCY  = 65000,//NAND_READ_LATENCY  = 65000/6,  //65us /4plane TLC_tREAD(65us : 16K page time)   =16.25
+    NAND_PROG_LATENCY  = 450000/12,//450us TLC_tProg(450us: 4plane(/4),3D(/3) time)  =37.5
     NAND_ERASE_LATENCY = SLC_BLOCK_ERASE_LATENCY_NS,//2000000
-    NAND_CHNL_PAGE_TRANSFER_LATENCY = 2441, // =2.5? 1200MT = 9600MB/s = 0.1ms per 1MB 
+    NAND_CHNL_PAGE_TRANSFER_LATENCY = 25000, // =2.5? 1200MT = 9600MB/s = 390ns per 4K 
     //NAND_CHNL_PAGE_TRANSFER_LATENCY = 0,
     //SK Hynix read     : 400Mb/s for 1 chip..
     //WD ZN540 4TB read : avg 80us 
@@ -23,7 +21,6 @@ enum {
     //WD ZN540 4TB write: 
     //ZEMU write        : 5Mb/s for 1 chip...
 
-/* As best I know, ZONE RESET time is way more faster than ERASE_LAT (Inhoinno) */
     ZONE_RESET_LATENCY =  SLC_BLOCK_ERASE_LATENCY_NS,
 };
 
@@ -42,6 +39,13 @@ typedef struct zns_ssd_channel {
 
 }zns_ssd_channel;
 
+typedef struct zns_ssd_plane {
+    uint64_t next_avail_time; 
+    uint64_t nregs;
+    bool *is_reg_busy;
+    bool busy;
+}zns_ssd_plane;
+
 /**
  * @brief 
  * inhoinno: to implement Multi way in ZNS, ssd_chip structure is required.
@@ -53,7 +57,6 @@ typedef struct zns_ssd_lun {
     uint64_t next_avail_time; // in nanoseconds
     pthread_spinlock_t time_lock;
     bool busy;
-
 }zns_ssd_lun;
 
 /**
@@ -68,6 +71,8 @@ struct zns_ssdparams{
     uint64_t zones;             /* # of zones in ZNS SSD */
     uint64_t chnls_per_zone;    /* ZNS Association degree. # of channels per zone, must be divisor of nchnls */
     uint64_t ways_per_zone;     /* another ZNS Association degree. # of ways per zone, must be divisor of nways */
+    uint64_t dies_per_chip;
+    uint64_t planes_per_die;      
     uint64_t csze_pages;        /* #of Pages in Chip (Inhoinno:I guess lun in femu)*/
     uint64_t nchips;            /* # of chips in SSD*/
     bool     is_another_namespace;
@@ -89,6 +94,7 @@ typedef struct zns {
     struct zns_ssdparams    sp;
     struct zns_ssd_channel *ch;
     struct zns_ssd_lun *chips;
+    struct zns_ssd_plane *planes;
 
     /*new members for znsssd*/
     struct NvmeNamespace    * namespaces;      //FEMU only support 1 namespace For now, 

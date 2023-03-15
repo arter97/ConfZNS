@@ -37,12 +37,12 @@
  */
 #define ADVANCE_PER_CH_ENDTIME 1
 #define SK_HYNIX_VALIDATION 0
-#define MK_ZONE_CONVENTIONAL 5
-#define NVME_PRIORITY_SCHED_MODE 1
+#define MK_ZONE_CONVENTIONAL 3
+#define NVME_PRIORITY_SCHED_MODE 1      //future feature for ConfZNS
 
 #define PCIe_TIME_SIMULATION 1
-#define Interface_PCIeGen3x4_bwmb (3500 * MiB) //MB.s
-#define Interface_PCIeGen3x4_bw 3500
+#define Interface_PCIeGen3x4_bwmb (4034 * MiB) //MB.s
+#define Interface_PCIeGen3x4_bw 4034
 typedef struct _PCIe_Gen3_x4 {
     //lock
     uint64_t bw;
@@ -1507,7 +1507,7 @@ static inline uint16_t nvme_check_mdts(FemuCtrl *n, size_t len)
 #define MN_MAX_LEN (64)
 #define ID_MAX_LEN (4)
 
-//#define FEMU_DEBUG_NVME
+#define FEMU_DEBUG_NVME
 #ifndef FEMU_DEBUG_NVME
 #define femu_debug(fmt, ...) \
     do { printf("[FEMU] Dbg: " fmt, ## __VA_ARGS__); } while (0)
